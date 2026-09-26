@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
+        <ValheimTestingProject Condition="'$(ValheimTestingProject)' == ''">../../cli-test-framework/Toolkit/Valheim.Testing/Valheim.Testing.csproj</ValheimTestingProject>
         <!--
           net48 matches the mod's own target and runs under Mono (closest to
           Valheim's in-game runtime); net10.0 is the fast local loop that
@@ -102,4 +103,5 @@
         </PackageReference>
     </ItemGroup>
 
+    <ItemGroup><ProjectReference Include="$(ValheimTestingProject)" /></ItemGroup>
 </Project>
