@@ -177,8 +177,10 @@ observations remain a separate future boundary check.
 `Valheim.Testing.Game` preview 2. The Roads runner supplies
 `roads.testing/session`; the library has no Roads dependency. Readiness and
 observations remain in the optional Roads adapter, and fixture/scenario decisions
-remain here. The extraction is locally tested after the successful station pilot;
-the extracted binary has not yet been rerun on the station.
+remain here. The extraction is locally tested and passed a dedicated empty-save repeat;
+the same runner rejected the archived broken Roads build after reload. Bridge
+acceptance is still the preceding Roads-local lifecycle run, not a repeated test
+of the extracted binary.
 
 `TotalRoadPoints` is not a persistence identity: generation adds planned path
 points, bridge levelling does not update that counter, and loading totals all
