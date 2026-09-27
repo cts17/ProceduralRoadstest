@@ -41,7 +41,11 @@ public sealed class Plugin : BaseUnityPlugin
                 ["source"] = "owned-test-session", ["token"] = Environment.GetEnvironmentVariable("ROADS_TEST_SESSION_TOKEN") ?? "",
                 ["pid"] = process.Id, ["saveRoot"] = Utils.GetSaveDataPath(FileHelpers.FileSource.Local),
                 ["dedicated"] = net != null && net.IsDedicated(),
-                ["devcommands"] = Console.instance != null && Console.instance.IsCheatsEnabled(),
+                // Match the CLI extension gate's explicit flag. IsCheatsEnabled
+                // can be patched true on a dedicated server without enabling
+                // mutating extensions (e.g. ServerDevCommands).
+                ["devcommands"] = Console.instance != null && (bool)(typeof(Terminal).GetField("m_cheat", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
+                    ?? throw new MissingFieldException("Terminal.m_cheat")).GetValue(null),
                 ["complete"] = net != null && net.IsServer() && ZoneSystem.instance != null && ZDOMan.instance != null && RoadNetworkGenerator.RoadsAvailable
             });
         yield break;
