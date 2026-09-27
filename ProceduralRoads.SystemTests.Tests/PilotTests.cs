@@ -14,22 +14,22 @@ public class PilotTests
     {
         PieceComparison.Match([Piece(y: .04), Piece(y: -.04)], [Piece(), Piece(y: .08)], .05, 1);
     }
-    [Fact] public void EmptySaveScenarioConfirmsReloadAndSave()
+    [Fact] public async Task EmptySaveScenarioConfirmsReloadAndSave()
     {
         var fake = new Fake(); using var actor = Actor(fake); var report = new ScenarioReport("empty");
-        RoadsScenarios.EmptyNetworkReplacesOld(actor, () => fake.Cells = 0, () => Actor(new Fake { Cells = 0, Loaded = true }), report);
+        await RoadsScenarios.EmptyNetworkReplacesOld(actor, () => fake.Cells = 0, () => Actor(new Fake { Cells = 0, Loaded = true }), report);
         Assert.True(report.Passed); Assert.Equal(1, fake.Saves);
     }
-    [Fact] public void OldNetworkReturningFailsPersistence()
+    [Fact] public async Task OldNetworkReturningFailsPersistence()
     {
         var fake = new Fake(); using var actor = Actor(fake); var report = new ScenarioReport("empty");
-        Assert.Throws<InvalidOperationException>(() => RoadsScenarios.EmptyNetworkReplacesOld(actor, () => fake.Cells = 0, () => Actor(new Fake { Loaded = true }), report));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => RoadsScenarios.EmptyNetworkReplacesOld(actor, () => fake.Cells = 0, () => Actor(new Fake { Loaded = true }), report));
         Assert.False(report.Passed);
     }
-    [Fact] public void UnconfirmedSaveCannotTriggerRestart()
+    [Fact] public async Task UnconfirmedSaveCannotTriggerRestart()
     {
         var fake = new Fake { ConfirmSave = false }; using var actor = Actor(fake); bool restarted = false;
-        Assert.Throws<InvalidOperationException>(() => RoadsScenarios.EmptyNetworkReplacesOld(actor, () => fake.Cells = 0, () => { restarted = true; return Actor(new Fake()); }, new("empty")));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => RoadsScenarios.EmptyNetworkReplacesOld(actor, () => fake.Cells = 0, () => { restarted = true; return Actor(new Fake()); }, new("empty")));
         Assert.False(restarted);
     }
     [Fact] public async Task AlreadyDrainedAppendCannotPassRaceTest()

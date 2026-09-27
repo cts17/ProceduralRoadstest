@@ -23,15 +23,23 @@ public static class RoadsScenarios
         if (!saved.Output.Any(line => line.StartsWith("OK: SAVE ", StringComparison.Ordinal)))
             throw new InvalidOperationException("No confirmed world save; refusing restart.");
     }
-    public static void EmptyNetworkReplacesOld(GameActor server, Action regenerateEmptyOnce, Func<GameActor> restartOwnedSession, ScenarioReport report)
+    public static async Task EmptyNetworkReplacesOld(GameActor server, Action regenerateEmptyOnce, Func<GameActor> restartOwnedSession, ScenarioReport report, TimeSpan? generationTimeout = null, CancellationToken cancellation = default)
     {
         var capability = server.RequireCapability("roads.testing/network");
         report.Step("nonempty starting fixture", () =>
         {
             if (Network(server, capability).Data.GetProperty("cells").GetInt32() <= 0) throw new InvalidOperationException("Fixture must contain a previous network.");
         });
+        cancellation.ThrowIfCancellationRequested();
         report.Step("generate empty network once", regenerateEmptyOnce);
-        report.Step("empty before save", () => Empty(Network(server, capability)));
+        try
+        {
+            await Check.Eventually(() => server.Observe(capability), n => n.Source == "roads-memory" && n.Complete,
+                generationTimeout ?? TimeSpan.FromMinutes(2), TimeSpan.FromMilliseconds(500), cancellation);
+            report.Step("empty before save", () => Empty(Network(server, capability)));
+        }
+        catch (Exception error) { report.Step("generation completed", () => throw new InvalidOperationException("Empty generation did not complete correctly.", error)); throw; }
+        cancellation.ThrowIfCancellationRequested();
         report.Step("confirmed save", () => Save(server));
         GameActor? reloaded = null;
         try
@@ -52,6 +60,12 @@ public static class RoadsScenarios
         if (expected.Count == 0 || expected.All(x => x.Pieces.Count == 0)) throw new ArgumentException("Freeze expected bridge identities independently before the run.");
         if (expected.Select(x => (x.X, x.Z)).Distinct().Count() != expected.Count) throw new ArgumentException("Duplicate zone expectations.");
         var capability = server.RequireCapability("roads.testing/network");
+        report.Step("no previous pending append", () =>
+        {
+            if (Network(server, capability).Data.GetProperty("pendingZones").GetInt32() != 0)
+                throw new InvalidOperationException("Fixture already has pending work; cannot attribute this race to the append.");
+        });
+        cancellation.ThrowIfCancellationRequested();
         report.Step("append once", appendOnce);
         report.Step("append is still pending", () =>
         {
@@ -68,12 +82,19 @@ public static class RoadsScenarios
         }
         catch (Exception error) { report.Step("append queue drained", () => throw new InvalidOperationException("Queue did not drain.", error)); throw; }
         report.Step("independent piece census", () => CompareZones(server, expected));
+        cancellation.ThrowIfCancellationRequested();
         report.Step("confirmed save", () => Save(server));
         GameActor? reloaded = null;
         try
         {
             report.Step("restart owned fixture", () => reloaded = restartOwnedSession());
-            report.Step("pieces persist after restart", () => CompareZones(reloaded!, expected));
+            report.Step("pieces persist after restart", () =>
+            {
+                var network = Network(reloaded!, reloaded!.RequireCapability("roads.testing/network"));
+                if (!network.Data.GetProperty("loadedFromSave").GetBoolean() || network.Data.GetProperty("pendingZones").GetInt32() != 0)
+                    throw new InvalidOperationException("Restart regenerated roads or still has pending bridge work.");
+                CompareZones(reloaded!, expected);
+            });
         }
         finally { if (reloaded != null) report.Step("disconnect reloaded actor", reloaded.Dispose); }
     }

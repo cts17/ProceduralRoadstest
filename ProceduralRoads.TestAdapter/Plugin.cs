@@ -11,6 +11,7 @@ using valheimCLI.Extensions;
 namespace ProceduralRoads.TestAdapter;
 [BepInPlugin("testing.proceduralroads.adapter", "ProceduralRoads Test Adapter", "0.1.0")]
 [BepInDependency("warpalicious.ProceduralRoads")]
+[BepInDependency("valheimCLI.valheimCLI")]
 public sealed class Plugin : BaseUnityPlugin
 {
     private ExtensionRegistration? _registration;
@@ -23,10 +24,26 @@ public sealed class Plugin : BaseUnityPlugin
             yield return null;
         }
         _registration = valheimCLIPlugin.Instance.Extensions.Register("roads.testing", "0.1.0", 1,
+            new ExtensionCommand("session", "Read owned test process and save-root identity", Session, readOnly: true),
             new ExtensionCommand("network", "Read completed network and outstanding append counts", Network, readOnly: true, role: ExtensionRole.Server, needsWorld: true),
             new ExtensionCommand("bridge-zone", "Read marked bridge ZDOs in one zone: <zoneX> <zoneZ>", BridgeZone, readOnly: true, role: ExtensionRole.Server, needsWorld: true));
     }
     private void OnDestroy() => _registration?.Dispose();
+    private static IEnumerator Session(ExtensionContext context)
+    {
+        if (context.Arguments.Count != 0) { context.Fail("usage", "session takes no arguments"); yield break; }
+        var net = ZNet.instance;
+        using (var process = System.Diagnostics.Process.GetCurrentProcess())
+            context.Succeed(new Dictionary<string, object?>
+            {
+                ["source"] = "owned-test-session", ["token"] = Environment.GetEnvironmentVariable("ROADS_TEST_SESSION_TOKEN") ?? "",
+                ["pid"] = process.Id, ["saveRoot"] = Utils.GetSaveDataPath(FileHelpers.FileSource.Local),
+                ["dedicated"] = net != null && net.IsDedicated(),
+                ["devcommands"] = Console.instance != null && Console.instance.IsCheatsEnabled(),
+                ["complete"] = net != null && net.IsServer() && ZoneSystem.instance != null && ZDOMan.instance != null && RoadNetworkGenerator.RoadsAvailable
+            });
+        yield break;
+    }
     private static IEnumerator Network(ExtensionContext context)
     {
         if (context.Arguments.Count != 0) { context.Fail("usage", "network takes no arguments"); yield break; }

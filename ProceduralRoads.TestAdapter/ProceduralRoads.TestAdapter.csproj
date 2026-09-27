@@ -4,7 +4,7 @@
     <TargetFramework>net48</TargetFramework><LangVersion>10</LangVersion><Nullable>enable</Nullable>
     <CliDll Condition="'$(CliDll)' == ''">../../cli-test-framework/bin/Release/valheimCLI.dll</CliDll>
     <RoadsDll Condition="'$(RoadsDll)' == ''">../ProceduralRoads/bin/Debug/ProceduralRoads.dll</RoadsDll>
-    <Version>0.1.0</Version>
+    <Version>0.1.0</Version><DebugType>embedded</DebugType>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="valheimCLI"><HintPath>$(CliDll)</HintPath><Private>false</Private></Reference>
