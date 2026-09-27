@@ -48,6 +48,7 @@ internal static class PersistentTerrain
         var locations = Field<Dictionary<Vector2s, ZoneSystem.LocationInstance>>(ZoneSystem.instance, "m_locationInstances");
         // Bounded deterministic scan. Avoid location shaping, water and steep
         // terrain; this test measures replication, not routing or site approval.
+        int nearCount=0, terrainCount=0, generatedCount=0, savedCount=0;
         for (int z = -48; z <= 48; z += 2)
         for (int x = -48; x <= 48; x += 2)
         {
@@ -55,17 +56,18 @@ internal static class PersistentTerrain
             var centre = ZoneSystem.GetZonePos(first) + new Vector3(32,0,0);
             bool near = false;
             foreach (var entry in locations.Values)
-                if (Vector2.Distance(new Vector2(centre.x,centre.z), new Vector2(entry.m_position.x,entry.m_position.z)) < 256 + entry.m_location.m_exteriorRadius) { near = true; break; }
-            if (near || WorldGenerator.instance.GetBiome(centre.x,centre.z) != Heightmap.Biome.Meadows) continue;
+                if (Vector2.Distance(new Vector2(centre.x,centre.z), new Vector2(entry.m_position.x,entry.m_position.z)) < 64 + entry.m_location.m_exteriorRadius) { near = true; break; }
+            if (near) { nearCount++; continue; }
+            if(WorldGenerator.instance.GetBiome(centre.x,centre.z) != Heightmap.Biome.Meadows) {terrainCount++;continue;}
             float min=10000,max=-10000;
             foreach(int dx in new[]{-16,0,16}) foreach(int dz in new[]{-8,0,8})
             { float h=WorldGenerator.instance.GetHeight(centre.x+dx,centre.z+dz); min=Math.Min(min,h); max=Math.Max(max,h); }
-            if(min < 25 || max > 90 || max-min > 5) continue;
-            if((bool)generated.Invoke(ZoneSystem.instance,new object[]{first}) || (bool)generated.Invoke(ZoneSystem.instance,new object[]{second})) continue;
-            if(Heightmap.FindHeightmap(centre)!=null || RoadTerrainModifier.HasSavedTerrainCompiler(first) || RoadTerrainModifier.HasSavedTerrainCompiler(second)) continue;
+            if(min < 25 || max > 90 || max-min > 5) {terrainCount++;continue;}
+            if((bool)generated.Invoke(ZoneSystem.instance,new object[]{first}) || (bool)generated.Invoke(ZoneSystem.instance,new object[]{second})) {generatedCount++;continue;}
+            if(Heightmap.FindHeightmap(centre)!=null || RoadTerrainModifier.HasSavedTerrainCompiler(first) || RoadTerrainModifier.HasSavedTerrainCompiler(second)) {savedCount++;continue;}
             return new[]{first,second};
         }
-        throw new InvalidOperationException("No dry, untouched two-zone fixture away from POIs in the bounded search.");
+        throw new InvalidOperationException($"No untouched dry fixture: site={nearCount}, terrain={terrainCount}, generated={generatedCount}, saved={savedCount}.");
     }
     private static Dictionary<string,object?> Write(GameObject prefab, Vector2s[] zones)
     {
