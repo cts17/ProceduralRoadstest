@@ -61,7 +61,7 @@ try
             try { File.WriteAllText(Path.Combine(output, "boot-" + boot + ".process.json"), JsonSerializer.Serialize(new { pid = process.Id, startedUtc = DateTime.UtcNow, world = world.DirectoryPath })); }
             catch { process.Stop(TimeSpan.FromSeconds(15)); process.Dispose(); throw; }
             return process;
-        }, () => new RecordingTransport(new CliTransport("127.0.0.1", plan.Port), Path.Combine(output, "connection-" + ++connection + ".jsonl")), world.DirectoryPath, plan.ExpectCommand,
+        }, () => new RecordingTransport(new CliTransport("127.0.0.1", plan.Port), Path.Combine(output, "connection-" + ++connection + ".jsonl")), world.DirectoryPath, plan.ExpectCommand, "roads.testing/session",
             TimeSpan.FromSeconds(plan.StartupSeconds), TimeSpan.FromSeconds(plan.CommandSeconds), cancellation: cancellation.Token);
         GameActor? server = null;
         report.Step("start and verify owned dedicated fixture", () => server = session.Start());

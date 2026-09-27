@@ -142,7 +142,9 @@ accepted. The tool does not yet classify BepInEx warnings automatically.
 
 ## Validation and remaining boundaries
 
-The local suite has 57 runner/scenario tests, plus 20 shared-toolkit tests. A
+The local suite has 40 Roads runner/scenario tests, plus 49 shared-toolkit tests.
+The lifecycle tests moved with their implementation into the toolkit; they were
+not dropped. A
 Windows dedicated-server campaign also exercised the runner against the previously
 accepted Roads save/respawn fixes, with stable CLI core and the optional adapter.
 Empty-save and the bridge append/respawn scenario both require real saves and
@@ -167,3 +169,21 @@ The shared synthetic terrain unit model remains the bottom of the test pyramid.
 These simulated sessions exercise orchestration and assertions, not Unity terrain,
 RPCs or save encoding. Paired synthetic/game terrain and stock-client collision
 observations remain a separate future boundary check.
+
+
+## Shared lifecycle dependency
+
+`OwnedServerSession`, `DirectServerProcess` and `RecordingTransport` now live in
+`Valheim.Testing.Game` preview 2. The Roads runner supplies
+`roads.testing/session`; the library has no Roads dependency. Readiness and
+observations remain in the optional Roads adapter, and fixture/scenario decisions
+remain here. The extraction is locally tested after the successful station pilot;
+the extracted binary has not yet been rerun on the station.
+
+`TotalRoadPoints` is not a persistence identity: generation adds planned path
+points, bridge levelling does not update that counter, and loading totals all
+stored grid entries (including overlap copies). The existing production serializer
+round-trip test reproduces counter drift while serialized bytes and query results
+remain unchanged. Do not add equality of that counter as a save assertion. The
+station pilot did not capture raw road bytes before/after, so its exact +160
+cannot by itself prove full network identity either.
