@@ -142,7 +142,7 @@ accepted. The tool does not yet classify BepInEx warnings automatically.
 
 ## Validation and remaining boundaries
 
-The local suite has 40 Roads runner/scenario tests, plus 49 shared-toolkit tests.
+The local suite has 47 Roads runner/scenario tests, plus 49 shared-toolkit tests.
 The lifecycle tests moved with their implementation into the toolkit; they were
 not dropped. A
 Windows dedicated-server campaign also exercised the runner against the previously
@@ -167,8 +167,9 @@ those controls. Do not describe it as a completed cross-version control matrix.
 
 The shared synthetic terrain unit model remains the bottom of the test pyramid.
 These simulated sessions exercise orchestration and assertions, not Unity terrain,
-RPCs or save encoding. Paired synthetic/game terrain and stock-client collision
-observations remain a separate future boundary check.
+RPCs or save encoding. The declared terrain fixture below now calibrates the
+writer/compiler boundary in game. Natural-input replay and stock-client collision
+remain separate future checks.
 
 
 ## Shared lifecycle dependency
