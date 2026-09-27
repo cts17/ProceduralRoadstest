@@ -48,8 +48,8 @@ internal static class PersistentTerrain
         var locations = Field<Dictionary<Vector2s, ZoneSystem.LocationInstance>>(ZoneSystem.instance, "m_locationInstances");
         // Bounded deterministic scan. Avoid location shaping, water and steep
         // terrain; this test measures replication, not routing or site approval.
-        for (int z = 4; z <= 36; z += 2)
-        for (int x = 4; x <= 36; x += 2)
+        for (int z = -48; z <= 48; z += 2)
+        for (int x = -48; x <= 48; x += 2)
         {
             var first = new Vector2s(x,z); var second = new Vector2s(x+1,z);
             var centre = ZoneSystem.GetZonePos(first) + new Vector3(32,0,0);
@@ -60,7 +60,7 @@ internal static class PersistentTerrain
             float min=10000,max=-10000;
             foreach(int dx in new[]{-16,0,16}) foreach(int dz in new[]{-8,0,8})
             { float h=WorldGenerator.instance.GetHeight(centre.x+dx,centre.z+dz); min=Math.Min(min,h); max=Math.Max(max,h); }
-            if(min < 35 || max > 80 || max-min > 3) continue;
+            if(min < 25 || max > 90 || max-min > 5) continue;
             if((bool)generated.Invoke(ZoneSystem.instance,new object[]{first}) || (bool)generated.Invoke(ZoneSystem.instance,new object[]{second})) continue;
             if(Heightmap.FindHeightmap(centre)!=null || RoadTerrainModifier.HasSavedTerrainCompiler(first) || RoadTerrainModifier.HasSavedTerrainCompiler(second)) continue;
             return new[]{first,second};
