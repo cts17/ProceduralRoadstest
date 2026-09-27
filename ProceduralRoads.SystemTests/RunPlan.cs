@@ -37,7 +37,9 @@ public sealed class RunPlan
     public void Validate()
     {
         Runtime.Validate(); World.Validate();
-        if (Scenario != "empty-save" && Scenario != "bridge-respawn") throw new ArgumentException("Unknown scenario.");
+        if (Scenario != "empty-save" && Scenario != "bridge-respawn" && Scenario != "terrain-calibration") throw new ArgumentException("Unknown scenario.");
+        if (Scenario == "terrain-calibration" && (!Environment.TryGetValue("ROADS_TEST_TERRAIN_CALIBRATION", out var enabled) || enabled != "1"))
+            throw new ArgumentException("Explicitly enable the terrain fixture in the owned session environment.");
         if (Port < 1024 || Port > 65535 || StartupSeconds < 1 || StartupSeconds > 1800 || CommandSeconds < 1 || CommandSeconds > 120)
             throw new ArgumentException("Invalid port or time budget.");
         if (string.IsNullOrWhiteSpace(Executable) || Path.IsPathRooted(Executable) || Executable.Split('/', '\\').Contains(".."))
@@ -71,7 +73,7 @@ public sealed class RunPlan
                 PieceComparison.Match(zone.Pieces, zone.Pieces, .05, 1); // Validate transform shape/finite values before launch.
             }
         }
-        else if (Append.Length != 0 || Expected.Count != 0) throw new ArgumentException("Bridge settings supplied to empty-save.");
+        else if (Append.Length != 0 || Expected.Count != 0) throw new ArgumentException("Bridge settings supplied to a different scenario.");
     }
     public void CheckOutput(string output)
     {

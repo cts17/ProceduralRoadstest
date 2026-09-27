@@ -73,6 +73,8 @@ try
         });
         if (args[0] == "prepare-bridge")
             await RoadsScenarios.PrepareBridgeZones(server!, plan.Expected, report, cancellation.Token);
+        else if (plan.Scenario == "terrain-calibration")
+            TerrainCalibrationScenario.Run(server!, report, output);
         else if (plan.Scenario == "empty-save")
             await RoadsScenarios.EmptyNetworkReplacesOld(server!, () => server!.Execute("road_generate"), session.Restart, report, cancellation: cancellation.Token);
         else

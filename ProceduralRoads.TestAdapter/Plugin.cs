@@ -25,6 +25,7 @@ public sealed class Plugin : BaseUnityPlugin
             yield return null;
         }
         _registration = valheimCLIPlugin.Instance.Extensions.Register("roads.testing", "0.1.0", 1,
+            new ExtensionCommand("terrain-calibrate", "Run the opt-in two-zone declared terrain fixture", TerrainCalibration.Run, role: ExtensionRole.Server, needsWorld: true),
             new ExtensionCommand("session", "Read owned test process and save-root identity", Session, readOnly: true),
             new ExtensionCommand("network", "Read completed network and outstanding append counts", Network, readOnly: true, role: ExtensionRole.Server, needsWorld: true),
             new ExtensionCommand("bridge-zone", "Read marked bridge ZDOs in one zone: <zoneX> <zoneZ>", BridgeZone, readOnly: true, role: ExtensionRole.Server, needsWorld: true));

@@ -189,3 +189,33 @@ round-trip test reproduces counter drift while serialized bytes and query result
 remain unchanged. Do not add equality of that counter as a save assertion. The
 station pilot did not capture raw road bytes before/after, so its exact +160
 cannot by itself prove full network identity either.
+
+## Declared terrain calibration
+
+`terrain-calibration` is a bounded third scenario. Use an already-empty saved
+network and set `ROADS_TEST_TERRAIN_CALIBRATION=1` in the plan's environment.
+The adapter also requires a runner session token, dedicated mode, no peers and
+ungenerated/unloaded fixture zones (200,200) and (201,200). It is not a command
+for an attached player's world.
+
+The fixture creates a vanilla non-player square level modifier at height 64,
+two real zone heightmaps and ghost terrain compilers. A 4 m road crosses their
+shared edge. It applies targets 65, 65 again, 80 and 48. Earthwork noise, fill
+spread and cut batter are disabled only during this synchronous fixture and
+restored in `finally`; no frame yields occur while tuning is changed. No
+production source changes or expected-height injection are involved.
+
+The independently declared samples cover the centre, 2 m flat edge, 3 m
+half-strength release, 4 m outer edge and an untouched 6 m control. Targets
+beyond the compiler range must stop at 64 +/- 8. Every sample is read from the
+heightmap **and its own real mesh collider**, including both copies of the zone
+boundary. The runner requires all 100 identities and compares each layer within
+2 cm. Responses and residuals are retained even when heights disagree.
+
+The same declaration is exercised against the real Roads writer compiled with
+the existing minimal game doubles. This calibrates that writer/compiler test
+boundary, not the synthetic world's terrain generator, natural routing, stock
+client replication or character support. Those remain distinct checks. The
+platform is temporary and the scenario does not save it: its objects are destroyed
+and its ghost compiler ZDOs are requested for destruction, then the runner stops
+its disposable process. No game assets are redistributed by the fixture.

@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><OutputType>Exe</OutputType><RollForward>Major</RollForward><TargetFramework>net9.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
   <ItemGroup><ProjectReference Include="../../cli-test-framework/Toolkit/Valheim.Testing.Game/Valheim.Testing.Game.csproj" /></ItemGroup>
+  <ItemGroup><Compile Include="../ProceduralRoads.TestFixtures/FlatRoadFixture.cs" Link="Fixtures/FlatRoadFixture.cs" /></ItemGroup>
 </Project>

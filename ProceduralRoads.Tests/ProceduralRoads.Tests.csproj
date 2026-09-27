@@ -104,4 +104,5 @@
     </ItemGroup>
 
     <ItemGroup><ProjectReference Include="$(ValheimTestingProject)" /></ItemGroup>
+  <ItemGroup><Compile Include="../ProceduralRoads.TestFixtures/FlatRoadFixture.cs" Link="Fixtures/FlatRoadFixture.cs" /></ItemGroup>
 </Project>
