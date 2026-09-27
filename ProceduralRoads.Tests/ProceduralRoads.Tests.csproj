@@ -103,6 +103,7 @@
         </PackageReference>
     </ItemGroup>
 
-    <ItemGroup><ProjectReference Include="$(ValheimTestingProject)" /></ItemGroup>
+    <ItemGroup Condition="'$(ToolkitPackageVersion)' == ''"><ProjectReference Include="$(ValheimTestingProject)" /></ItemGroup>
+    <ItemGroup Condition="'$(ToolkitPackageVersion)' != ''"><PackageReference Include="Valheim.Testing" Version="$(ToolkitPackageVersion)" /></ItemGroup>
   <ItemGroup><Compile Include="../ProceduralRoads.TestFixtures/FlatRoadFixture.cs" Link="Fixtures/FlatRoadFixture.cs" /></ItemGroup>
 </Project>

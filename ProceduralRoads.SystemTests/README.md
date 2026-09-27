@@ -233,3 +233,44 @@ facts must report the CLI gate's explicit `Terminal.m_cheat` flag rather than
 `IsZoneGenerated` method requires an exact reflected lookup despite publicized
 compile references. For fixture manifests use the target platform's native
 relative paths; the current copier compares those path identities exactly.
+
+## Persistent native terrain and CLI-only client
+
+`prepare-terrain` with scenario `terrain-persistence` and environment
+`ROADS_TEST_PERSISTENT_TERRAIN=1` prepares a **new copy** of an empty saved network.
+The once-per-process adapter picks two ungenerated dry Meadows zones without an
+existing compiler and away from known location exterior footprints. The search
+is bounded; not finding a site is a failed preparation, not a passed test.
+
+Unlike the temporary platform calibration, it captures native pre-write vertices
+and retains the real compiler ZDOs. A width-4, constant-height road crosses the
+boundary. The independent runner calculates full blend through 2 m, half at 3 m,
+zero from 4 m and a +/-8 m delta limit. Tuning is temporarily the same analytic
+profile as the earlier calibration. Both boundary copies must agree, with at
+least one meaningful terrain change. It writes inputs, all 20 residuals and a
+client height plan, confirms a save and stops only its owned process.
+
+Preparation is not client acceptance. On a separate disposable copy of that save,
+join a CLI-only client with Roads and MWL explicitly pinned `absent`. Arrange
+arrival, then use the toolkit's `examples/ClientSurfaceCheck`: 15 unique native
+vertices, each heightmap and its own collider, plus three stationary grounded
+player observations. Save, restart and rejoin, then repeat the **same** plan.
+Do not deploy the Roads adapter to that client. Character backup, protection,
+account coordination and restoration are the operator's responsibility.
+
+Measured on Valheim 1.0.16: all 15 client heights and colliders matched exactly
+before and after a confirmed save/server restart/rejoin. The player was grounded
+at the target, speed zero, not flying or attached. The unchanged-ground negative
+expectation failed 8 of 15 points at the 5 cm tolerance. This establishes this
+small native-input replication fixture, not natural generator emulation, paint,
+noisy earthworks, pathfinding or a human walking/visual pass.
+
+Client-side `cli_arrive` was refused by the game's separate achievement/cheat
+confirmation in this run. The existing server-side `cli_teleport_peer` arranged
+arrival; the client's own observations proved where it ended up. A teleport
+request or a CLI transport success is not arrival evidence.
+
+Package consumers can pass `-p:ToolkitPackageVersion=0.1.0-preview.3` to the unit
+and system projects, with the matching local NuGet feed. This removes the sibling
+checkout dependency. Omit that property for source development. Packages are
+external test-driver libraries; the production mod has no new dependency.
