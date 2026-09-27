@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using BepInEx;
 using UnityEngine;
 using valheimCLI;
@@ -61,7 +62,12 @@ public sealed class Plugin : BaseUnityPlugin
             !int.TryParse(context.Arguments[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out int z) || Math.Abs((long)x) > 320 || Math.Abs((long)z) > 320)
         { context.Fail("usage", "bridge-zone <zoneX> <zoneZ> within +/-320"); yield break; }
         var zone = new Vector2s(x, z); var found = new List<ZDO>();
-        ZDOMan.instance.FindObjects(zone, found, new HashSet<ZoneSystem.SectorIndex>());
+        // Compile references are publicized, but the shipped game keeps this method
+        // private. Invoke its exact signature rather than requiring an access bypass.
+        var find = typeof(ZDOMan).GetMethod("FindObjects", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+            null, new[] { typeof(Vector2s), typeof(List<ZDO>), typeof(HashSet<ZoneSystem.SectorIndex>) }, null)
+            ?? throw new MissingMethodException("ZDOMan.FindObjects zone census signature changed.");
+        find.Invoke(ZDOMan.instance, new object[] { zone, found, new HashSet<ZoneSystem.SectorIndex>() });
         var pieces = found.Where(item => item.GetInt(BridgePlans.MarkerHash) == 1).ToArray();
         if (pieces.Length > 512) { context.Fail("census_limit", "More than 512 marked pieces in one zone; result omitted, not truncated."); yield break; }
         context.Succeed(new Dictionary<string, object?>

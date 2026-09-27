@@ -52,8 +52,8 @@ public sealed class OwnedServerSession : IDisposable
                 if (!reply.Ok)
                 {
                     // The core may answer before the optional adapter is registered.
-                    if (reply.Output.Any(x => x.Contains("no_extension_command", StringComparison.Ordinal)))
-                        last = "Roads adapter not registered yet";
+                    if (StartupUnavailable(reply))
+                        last = "Console or Roads adapter not ready yet";
                     else throw new InvalidOperationException("Session observation refused: " + reply.ErrorCode);
                 }
                 else
@@ -82,6 +82,14 @@ public sealed class OwnedServerSession : IDisposable
             if (remaining > TimeSpan.Zero && _poll > TimeSpan.Zero) Thread.Sleep(remaining < _poll ? remaining : _poll);
         }
         throw new TimeoutException("Server startup deadline: " + last);
+    }
+    public static bool StartupUnavailable(CommandResult reply) => !reply.Ok &&
+        (reply.Output.Any(x => x == "Error: Console not available (game not fully loaded)") ||
+         reply.Output.Any(x => x.StartsWith("EXTENSION_RESULT ", StringComparison.Ordinal) && IsMissingExtension(x)));
+    private static bool IsMissingExtension(string line)
+    {
+        try { using var doc = JsonDocument.Parse(line["EXTENSION_RESULT ".Length..]); return doc.RootElement.GetProperty("code").GetString() == "no_extension_command"; }
+        catch (Exception error) when (error is JsonException or KeyNotFoundException or InvalidOperationException) { return false; }
     }
     public static bool CheckIdentity(JsonElement result, string token, int pid, string saveRoot)
     {
@@ -125,10 +133,13 @@ public sealed class DirectServerProcess : IServerProcess
 {
     private readonly Process _process;
     private readonly Task _stdout, _stderr;
+    private readonly string _logPrefix;
+    private readonly string[] _gameLogs;
     public int Id => _process.Id;
     public bool HasExited => _process.HasExited;
-    public DirectServerProcess(ProcessStartInfo start, string logPrefix)
+    public DirectServerProcess(ProcessStartInfo start, string logPrefix, params string[] gameLogs)
     {
+        _logPrefix = logPrefix; _gameLogs = gameLogs;
         start.UseShellExecute = false; start.RedirectStandardOutput = true; start.RedirectStandardError = true;
         _process = Process.Start(start) ?? throw new IOException("Could not start owned server.");
         _stdout = Capture(_process.StandardOutput, logPrefix + ".stdout.log");
@@ -144,6 +155,12 @@ public sealed class DirectServerProcess : IServerProcess
         if (!_process.HasExited) _process.Kill(entireProcessTree: true);
         if (!_process.WaitForExit((int)timeout.TotalMilliseconds)) throw new TimeoutException("Owned server did not stop.");
         if (!Task.WaitAll([_stdout, _stderr], timeout)) throw new TimeoutException("Process log capture did not finish.");
+        for (int i = 0; i < _gameLogs.Length; i++)
+        {
+            string target = _logPrefix + ".game-" + i + ".log";
+            if (File.Exists(_gameLogs[i])) File.Copy(_gameLogs[i], target, overwrite: true);
+            else File.WriteAllText(target + ".absent", "Game did not create this log: " + _gameLogs[i]);
+        }
     }
     public void Dispose() => _process.Dispose();
 }

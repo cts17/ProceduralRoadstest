@@ -5,9 +5,9 @@ using System.Text.Json;
 using ProceduralRoads.SystemTests;
 using Valheim.Testing.Game;
 
-if (args.Length != 3 || (args[0] != "validate" && args[0] != "run"))
+if (args.Length != 3 || (args[0] != "validate" && args[0] != "run" && args[0] != "prepare-bridge"))
 {
-    Console.Error.WriteLine("Usage: ProceduralRoads.SystemTests validate|run <plan.json> <new-output-directory>");
+    Console.Error.WriteLine("Usage: ProceduralRoads.SystemTests validate|run|prepare-bridge <plan.json> <new-output-directory>");
     return 2;
 }
 using var cancellation = new CancellationTokenSource();
@@ -20,8 +20,9 @@ try
 {
     if (Path.Exists(output)) throw new IOException("Use a new output directory; existing evidence is never overwritten.");
     var plan = RunPlan.Read(args[1]); plan.Validate(); plan.CheckOutput(output);
-    if (args[0] == "run" && !OperatingSystem.IsWindows())
+    if (args[0] != "validate" && !OperatingSystem.IsWindows())
         throw new PlatformNotSupportedException("This launch pilot supports the Windows dedicated server only. Use validate on Mac; it never launches a game.");
+    if (args[0] == "prepare-bridge" && plan.Scenario != "bridge-respawn") throw new ArgumentException("prepare-bridge requires a bridge plan.");
     report.Provenance["planSha256"] = WorldFixture.Hash(args[1]);
     report.Provenance["scenario"] = plan.Scenario;
     report.Provenance["runnerSha256"] = WorldFixture.Hash(typeof(RunPlan).Assembly.Location);
@@ -55,7 +56,8 @@ try
             foreach (var argument in plan.Arguments) start.ArgumentList.Add(plan.Expand(argument, runtime.DirectoryPath, world.DirectoryPath));
             foreach (var entry in plan.Environment) start.Environment[entry.Key] = plan.Expand(entry.Value, runtime.DirectoryPath, world.DirectoryPath);
             start.Environment["ROADS_TEST_SESSION_TOKEN"] = token;
-            var process = new DirectServerProcess(start, Path.Combine(output, "boot-" + ++boot));
+            var process = new DirectServerProcess(start, Path.Combine(output, "boot-" + ++boot),
+                Path.Combine(runtime.DirectoryPath, "BepInEx", "LogOutput.log"), Path.Combine(runtime.DirectoryPath, "toolkit-unity.log"));
             try { File.WriteAllText(Path.Combine(output, "boot-" + boot + ".process.json"), JsonSerializer.Serialize(new { pid = process.Id, startedUtc = DateTime.UtcNow, world = world.DirectoryPath })); }
             catch { process.Stop(TimeSpan.FromSeconds(15)); process.Dispose(); throw; }
             return process;
@@ -69,7 +71,9 @@ try
             if (!server.Observe(capability).Data.GetProperty("devcommands").GetBoolean()) server.Execute("devcommands");
             if (!server.Observe(capability).Data.GetProperty("devcommands").GetBoolean()) throw new InvalidOperationException("Devcommands did not enable.");
         });
-        if (plan.Scenario == "empty-save")
+        if (args[0] == "prepare-bridge")
+            await RoadsScenarios.PrepareBridgeZones(server!, plan.Expected, report, cancellation.Token);
+        else if (plan.Scenario == "empty-save")
             await RoadsScenarios.EmptyNetworkReplacesOld(server!, () => server!.Execute("road_generate"), session.Restart, report, cancellation: cancellation.Token);
         else
             await RoadsScenarios.BridgeAppendSurvivesRespawn(server!, () => server!.Execute(plan.Append), session.Restart, plan.Expected, report, cancellation.Token);

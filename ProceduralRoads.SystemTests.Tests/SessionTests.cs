@@ -17,6 +17,17 @@ public class SessionTests
             wrong == "path" ? Path.GetTempPath() : Path.Combine(Path.GetTempPath(), "copy"), dedicated: wrong != "client");
         Assert.Throws<InvalidOperationException>(() => OwnedServerSession.CheckIdentity(data, "ours", 7, Path.Combine(Path.GetTempPath(), "copy")));
     }
+    [Fact] public void ConsoleStartupRefusalIsTransientButOtherFailuresAreNot()
+    {
+        Assert.True(OwnedServerSession.StartupUnavailable(new() { Ok = false, Output = ["Error: Console not available (game not fully loaded)"] }));
+        Assert.False(OwnedServerSession.StartupUnavailable(new() { Ok = false, ErrorCode = "command_failed", Output = ["ERROR: strict pin mismatch"] }));
+        Assert.False(OwnedServerSession.StartupUnavailable(new() { Ok = false, Output = ["some log mentions no_extension_command"] }));
+    }
+    [Fact] public void MissingCapabilityUsesStructuredCodeOnly()
+    {
+        Assert.True(OwnedServerSession.StartupUnavailable(new() { Ok = false, Output = ["EXTENSION_RESULT {\"code\":\"no_extension_command\"}"] }));
+        Assert.False(OwnedServerSession.StartupUnavailable(new() { Ok = false, Output = ["EXTENSION_RESULT {broken"] }));
+    }
     [Fact] public void IncompleteOwnedSessionIsNotReady() => Assert.False(OwnedServerSession.CheckIdentity(Reply("a", 1, Path.GetTempPath(), false), "a", 1, Path.GetTempPath()));
     [Fact] public void StartupPinsThenRestartStopsOldBeforeLaunchingAndRepins()
     {
@@ -85,8 +96,12 @@ public class SessionTests
         string dir = Path.Combine(Path.GetTempPath(), "roads-process-" + Guid.NewGuid()); Directory.CreateDirectory(dir);
         try
         {
-            using var owned = new DirectServerProcess(new ProcessStartInfo("/bin/sleep", "30"), Path.Combine(dir, "owned"));
+            string log = Path.Combine(dir, "game.log"); File.WriteAllText(log, "boot one evidence");
+            using var owned = new DirectServerProcess(new ProcessStartInfo("/bin/sleep", "30"), Path.Combine(dir, "owned"), log, Path.Combine(dir, "missing.log"));
             owned.Stop(TimeSpan.FromSeconds(3)); Assert.True(owned.HasExited); Assert.False(unrelated.HasExited);
+            File.WriteAllText(log, "boot two overwrites live log");
+            Assert.Equal("boot one evidence", File.ReadAllText(Path.Combine(dir, "owned.game-0.log")));
+            Assert.True(File.Exists(Path.Combine(dir, "owned.game-1.log.absent")));
         }
         finally { unrelated.Kill(); unrelated.WaitForExit(); Directory.Delete(dir, true); }
     }

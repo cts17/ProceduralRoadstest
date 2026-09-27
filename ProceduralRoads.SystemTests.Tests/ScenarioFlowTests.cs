@@ -8,6 +8,27 @@ public class ScenarioFlowTests
 {
     private static readonly Piece Expected = new(10, [1, 2, 3], [0, 0, 0, 1]);
     private static readonly ZoneExpectation[] Zones = [new(0, 0, [Expected])];
+    [Fact] public void PreparationRequiresExplicitBooleanObservation()
+    {
+        Assert.True(RoadsScenarios.GeneratedReply(["VALUE true"])); Assert.False(RoadsScenarios.GeneratedReply(["VALUE false"]));
+        Assert.Throws<InvalidOperationException>(() => RoadsScenarios.GeneratedReply(["OK: true"]));
+        Assert.Throws<InvalidOperationException>(() => RoadsScenarios.GeneratedReply(["VALUE true", "VALUE false"]));
+    }
+    [Fact] public async Task PreparationObservesGenerationBeforeSavingAndNeverAppends()
+    {
+        var fake = new Transport { UngeneratedReads = 1 }; using var actor = Actor(fake);
+        await RoadsScenarios.PrepareBridgeZones(actor, Zones, new("prepare"));
+        Assert.Equal(2, fake.Commands.Count(x => x.StartsWith("cli_call ZoneSystem.instance.IsZoneGenerated")));
+        Assert.Single(fake.Commands.Where(x => x.StartsWith("cli_call ZoneSystem.instance.CreateGhostZones")));
+        Assert.Equal("cli_save", fake.Commands.Last());
+        Assert.DoesNotContain(fake.Commands, x => x.StartsWith("road_path") || x == "road_bridges respawn");
+    }
+    [Fact] public async Task CancelledPreparationDoesNotGenerateOrSave()
+    {
+        var fake = new Transport(); using var actor = Actor(fake); using var stop = new CancellationTokenSource(); stop.Cancel();
+        await Assert.ThrowsAsync<OperationCanceledException>(() => RoadsScenarios.PrepareBridgeZones(actor, Zones, new("prepare"), stop.Token));
+        Assert.DoesNotContain(fake.Commands, x => x.StartsWith("cli_call") || x == "cli_save");
+    }
     [Fact] public async Task BridgeChecksBeforeAndAfterReloadAndIssuesEachMutationOnce()
     {
         var fake = new Transport(); using var actor = Actor(fake); var report = new ScenarioReport("bridge");
@@ -69,6 +90,7 @@ public class ScenarioFlowTests
     private sealed class Transport : IGameTransport
     {
         public bool Loaded, Missing, LoseAppendReply, CensusComplete = true;
+        public int UngeneratedReads;
         public int Pending, Cells = 4, IncompleteReads, ReadsAfterGenerate;
         public List<string> Commands = [];
         public CommandResult Execute(string command, TimeSpan timeout)
@@ -79,6 +101,8 @@ public class ScenarioFlowTests
                 commands = new[] { new { name = "network", resultVersion = 1, readOnly = true }, new { name = "bridge-zone", resultVersion = 1, readOnly = true } } } } }));
             if (command.StartsWith("road_path")) { Pending = 1; if (LoseAppendReply) throw new IOException("Outcome unknown"); return Ok("OK: appended"); }
             if (command == "road_bridges respawn") { Pending = 0; return Ok("OK: respawn"); }
+            if (command.StartsWith("cli_call ZoneSystem.instance.IsZoneGenerated")) return Ok(UngeneratedReads-- > 0 ? "VALUE false" : "VALUE true");
+            if (command.StartsWith("cli_call ZoneSystem.instance.CreateGhostZones")) return Ok("OK");
             if (command == "cli_save") return Ok("OK: SAVE saveNumber=2");
             object data;
             if (command.StartsWith("cli_extension roads.testing/bridge-zone"))

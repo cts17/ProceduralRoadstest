@@ -19,7 +19,8 @@ station control are built in.
   3D position, quaternion angle and multiplicity (5 cm / 1 degree). It does not
   assume every fixture has 443 pieces.
 - JSON/JUnit results, per-connection command/reply evidence, boot stdout/stderr,
-  source/copy SHA256 manifests and runner/toolkit hashes are retained. Failed runs
+  source/copy SHA256 manifests and runner/toolkit hashes are retained. BepInEx and
+  Unity logs are archived per boot, before a restart can overwrite them. Failed runs
   keep their copies for diagnosis. Existing output directories are refused.
 
 ## Ownership and isolation
@@ -119,11 +120,18 @@ starting saved world still contains a road network. For bridge-respawn, use
 `[{"x":0,"z":0,"pieces":[{"prefabHash":123,"position":[1,2,3],"rotation":[0,0,0,1]}]}]`.
 Use real independent values, including all marked pieces in those zones. The
 fixture must already have generated every zone occupied by the crossing; this
-runner does not drive a player or invent a crossing location.
+acceptance scenario does not drive a player or invent a crossing location.
+For an independently chosen crossing, `prepare-bridge` can generate the listed
+zones in a fresh disposable copy and confirm a save. It has a 60-second bound per
+zone and records mode `prepare-bridge`; success is fixture preparation, not bridge
+acceptance. Freeze and hash the resulting `worlds_local` folder in a separate
+save-root input before running the real scenario.
 
 ```sh
 # Hashes/copies inputs and checks the plan; NEVER launches a game (Mac supported).
 dotnet ProceduralRoads.SystemTests.dll validate plan.json /new/preflight-output
+# Optional Windows fixture preparation; never counts as acceptance.
+dotnet ProceduralRoads.SystemTests.dll prepare-bridge bridge-plan.json C:/runs/prepare-unique
 # Windows only; use a different new output directory.
 dotnet ProceduralRoads.SystemTests.dll run plan.json C:/runs/roads-test-unique
 ```
@@ -132,20 +140,28 @@ A validation pass has report mode `validate`; it is not game validation. Inspect
 actual command/reply records and game warnings/errors before calling a `run` pass
 accepted. The tool does not yet classify BepInEx warnings automatically.
 
-## Status and remaining station gate
+## Validation and remaining boundaries
 
-The local state-machine, fixture-plan and scenario tests pass. The adapter compiles
-against game references. **This new runner has not yet run in Valheim.** Earlier
-private-script runs prove the underlying Roads fixes, not this runner.
+The local suite has 57 runner/scenario tests, plus 20 shared-toolkit tests. A
+Windows dedicated-server campaign also exercised the runner against the previously
+accepted Roads save/respawn fixes, with stable CLI core and the optional adapter.
+Empty-save and the bridge append/respawn scenario both require real saves and
+separate owned processes. The bridge fixture freezes 443 independently recorded
+piece transforms across five generated zones; a different fixture may use another
+count.
 
-When the station is available, prepare two small disposable fixtures using the
-known regression sites, claim the machine, run `validate`, then one run of each
-scenario. Check exact build/world pins, save completion, confirmed process exit,
-reloaded counts/pieces, logs and restoration. Use old broken Roads builds as
-negative controls if the existing fixture can still reproduce them; rebuild the
-adapter against each corresponding build. A missed bridge race is a fixture
-failure to investigate, not a reason to retry append repeatedly. Keep this gate
-small; no six-world generation campaign is needed.
+The first game runs exposed boundaries that local doubles did not model:
+TCP readiness preceded Console initialization, the fixture copier omitted empty
+ScriptEngine directories, and a census method was private in the shipped game
+despite being public in compile references. These are corrected. The census uses
+an exact reflected signature and fails if that signature changes. Captured logs
+must still be reviewed: a passing scenario is not proof that every mod in the
+fixture has a clean startup or that all terrain baking succeeded.
+
+For another Roads/game build, repeat this small gate with exact runtime and world
+pins. Earlier private-script negative controls reproduced the underlying mod bugs;
+this runner's initial failures were runner/adapter failures, not substitutes for
+those controls. Do not describe it as a completed cross-version control matrix.
 
 The shared synthetic terrain unit model remains the bottom of the test pyramid.
 These simulated sessions exercise orchestration and assertions, not Unity terrain,

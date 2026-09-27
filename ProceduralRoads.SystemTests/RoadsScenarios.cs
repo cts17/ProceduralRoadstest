@@ -98,6 +98,38 @@ public static class RoadsScenarios
         }
         finally { if (reloaded != null) report.Step("disconnect reloaded actor", reloaded.Dispose); }
     }
+    // Explicit fixture authoring, never an acceptance result. CreateGhostZones is a
+    // bounded incremental setup operation; append/respawn are never retried here.
+    public static async Task PrepareBridgeZones(GameActor server, IReadOnlyList<ZoneExpectation> zones, ScenarioReport report, CancellationToken cancellation = default)
+    {
+        foreach (var zone in zones)
+        {
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            try
+            {
+                while (true)
+                {
+                    cancellation.ThrowIfCancellationRequested();
+                    if (watch.Elapsed >= TimeSpan.FromSeconds(60)) throw new TimeoutException("Fixture zone generation deadline.");
+                    var result = server.Execute(FormattableString.Invariant($"cli_call ZoneSystem.instance.IsZoneGenerated {zone.X},{zone.Z}"));
+                    if (GeneratedReply(result.Output)) break;
+                    server.Execute(FormattableString.Invariant($"cli_call ZoneSystem.instance.CreateGhostZones {zone.X * 64},0,{zone.Z * 64}"));
+                    await Task.Delay(250, cancellation);
+                }
+                report.Step($"prepared generated zone {zone.X},{zone.Z}", () => {});
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception error) { report.Step($"prepare zone {zone.X},{zone.Z}", () => throw new InvalidOperationException("Zone preparation failed.", error)); throw; }
+        }
+        cancellation.ThrowIfCancellationRequested();
+        report.Step("confirmed preparation save", () => Save(server));
+    }
+    public static bool GeneratedReply(IReadOnlyList<string> lines)
+    {
+        var values = lines.Where(x => x.StartsWith("VALUE ", StringComparison.Ordinal)).ToArray();
+        if (values.Length != 1 || (values[0] != "VALUE true" && values[0] != "VALUE false")) throw new InvalidOperationException("Expected one boolean zone observation.");
+        return values[0] == "VALUE true";
+    }
     public static void CompareZones(GameActor server, IReadOnlyList<ZoneExpectation> expected)
     {
         var capability = server.RequireCapability("roads.testing/bridge-zone");
