@@ -219,3 +219,16 @@ client replication or character support. Those remain distinct checks. The
 platform is temporary and the scenario does not save it: its objects are destroyed
 and its ghost compiler ZDOs are requested for destruction, then the runner stops
 its disposable process. No game assets are redistributed by the fixture.
+
+Measured on Valheim 1.0.16 dedicated: all 100 height and local-collider samples
+matched exactly. A measurement-only adapter with the writer omitted failed 48
+samples (the baseline and undeformed controls still passed). The command took
+about 7 seconds after startup. The local suite is now 47 runner/scenario tests,
+plus 766 production-writer tests on both runtimes.
+
+Two game boundaries were fixed while establishing this result: session permission
+facts must report the CLI gate's explicit `Terminal.m_cheat` flag rather than
+`IsCheatsEnabled()` (other mods can patch the latter), and the shipped private
+`IsZoneGenerated` method requires an exact reflected lookup despite publicized
+compile references. For fixture manifests use the target platform's native
+relative paths; the current copier compares those path identities exactly.
