@@ -37,9 +37,11 @@ public sealed class RunPlan
     public void Validate()
     {
         Runtime.Validate(); World.Validate();
-        if (Scenario != "empty-save" && Scenario != "bridge-respawn" && Scenario != "terrain-calibration") throw new ArgumentException("Unknown scenario.");
+        if (Scenario != "empty-save" && Scenario != "bridge-respawn" && Scenario != "terrain-calibration" && Scenario != "terrain-persistence") throw new ArgumentException("Unknown scenario.");
         if (Scenario == "terrain-calibration" && (!Environment.TryGetValue("ROADS_TEST_TERRAIN_CALIBRATION", out var enabled) || enabled != "1"))
             throw new ArgumentException("Explicitly enable the terrain fixture in the owned session environment.");
+        if (Scenario == "terrain-persistence" && (!Environment.TryGetValue("ROADS_TEST_PERSISTENT_TERRAIN", out var persist) || persist != "1"))
+            throw new ArgumentException("Explicitly enable the persistent fixture in the owned session environment.");
         if (Port < 1024 || Port > 65535 || StartupSeconds < 1 || StartupSeconds > 1800 || CommandSeconds < 1 || CommandSeconds > 120)
             throw new ArgumentException("Invalid port or time budget.");
         if (string.IsNullOrWhiteSpace(Executable) || Path.IsPathRooted(Executable) || Executable.Split('/', '\\').Contains(".."))

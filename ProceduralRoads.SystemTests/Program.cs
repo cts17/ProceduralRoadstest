@@ -5,9 +5,9 @@ using System.Text.Json;
 using ProceduralRoads.SystemTests;
 using Valheim.Testing.Game;
 
-if (args.Length != 3 || (args[0] != "validate" && args[0] != "run" && args[0] != "prepare-bridge"))
+if (args.Length != 3 || (args[0] != "validate" && args[0] != "run" && args[0] != "prepare-bridge" && args[0] != "prepare-terrain"))
 {
-    Console.Error.WriteLine("Usage: ProceduralRoads.SystemTests validate|run|prepare-bridge <plan.json> <new-output-directory>");
+    Console.Error.WriteLine("Usage: ProceduralRoads.SystemTests validate|run|prepare-bridge|prepare-terrain <plan.json> <new-output-directory>");
     return 2;
 }
 using var cancellation = new CancellationTokenSource();
@@ -23,6 +23,7 @@ try
     if (args[0] != "validate" && !OperatingSystem.IsWindows())
         throw new PlatformNotSupportedException("This launch pilot supports the Windows dedicated server only. Use validate on Mac; it never launches a game.");
     if (args[0] == "prepare-bridge" && plan.Scenario != "bridge-respawn") throw new ArgumentException("prepare-bridge requires a bridge plan.");
+    if ((args[0] == "prepare-terrain") != (plan.Scenario == "terrain-persistence") && args[0] != "validate") throw new ArgumentException("terrain-persistence is preparation only; use prepare-terrain.");
     report.Provenance["planSha256"] = WorldFixture.Hash(args[1]);
     report.Provenance["scenario"] = plan.Scenario;
     report.Provenance["runnerSha256"] = WorldFixture.Hash(typeof(RunPlan).Assembly.Location);
@@ -71,7 +72,9 @@ try
             if (!server.Observe(capability).Data.GetProperty("devcommands").GetBoolean()) server.Execute("devcommands");
             if (!server.Observe(capability).Data.GetProperty("devcommands").GetBoolean()) throw new InvalidOperationException("Devcommands did not enable.");
         });
-        if (args[0] == "prepare-bridge")
+        if (args[0] == "prepare-terrain")
+            PersistentTerrainScenario.Prepare(server!, report, output);
+        else if (args[0] == "prepare-bridge")
             await RoadsScenarios.PrepareBridgeZones(server!, plan.Expected, report, cancellation.Token);
         else if (plan.Scenario == "terrain-calibration")
             TerrainCalibrationScenario.Run(server!, report, output);

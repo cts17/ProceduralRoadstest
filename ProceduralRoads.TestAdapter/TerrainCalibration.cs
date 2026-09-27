@@ -148,7 +148,7 @@ internal static class TerrainCalibration
         }
     }
 
-    private sealed class FixtureTuning : IDisposable
+    internal sealed class FixtureTuning : IDisposable
     {
         private readonly List<(FieldInfo field, object value)> restore = new List<(FieldInfo, object)>();
         public FixtureTuning()
