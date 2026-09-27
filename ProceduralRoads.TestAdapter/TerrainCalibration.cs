@@ -36,7 +36,9 @@ internal static class TerrainCalibration
             {
                 var zone = new Vector2s(FlatRoadFixture.ZoneX + offset, FlatRoadFixture.ZoneZ);
                 var position = ZoneSystem.GetZonePos(zone);
-                if (ZoneSystem.instance.IsZoneGenerated(zone) || Heightmap.FindHeightmap(position) != null || TerrainComp.FindTerrainCompiler(position) != null)
+                var generated = typeof(ZoneSystem).GetMethod("IsZoneGenerated", Fields, null, new[] { typeof(Vector2s) }, null)
+                    ?? throw new MissingMethodException("ZoneSystem.IsZoneGenerated(Vector2s)");
+                if ((bool)generated.Invoke(ZoneSystem.instance, new object[] { zone }) || Heightmap.FindHeightmap(position) != null || TerrainComp.FindTerrainCompiler(position) != null)
                     throw new InvalidOperationException("Calibration zone must be ungenerated and unloaded.");
                 float deadline = Time.realtimeSinceStartup + 30;
                 while (!HeightmapBuilder.instance.IsTerrainReady(position, Field<int>(template, "m_width"), template.m_scale, template.IsDistantLod, WorldGenerator.instance))

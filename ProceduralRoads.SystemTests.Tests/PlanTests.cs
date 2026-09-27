@@ -11,6 +11,14 @@ public class PlanTests
         Executable = "server.exe", Arguments = ["-batchmode", "-nographics", "-savedir", "{world}"],
         Pins = new() { ["worlduid"] = "123", ["warpalicious.ProceduralRoads"] = new('1', 32), ["valheimCLI.valheimCLI"] = new('2', 32), ["testing.proceduralroads.adapter"] = new('3', 32) }
     };
+    [Fact] public void TerrainFixtureRequiresExplicitEnablementAndNoBridgeMutation()
+    {
+        var plan = Valid(); plan.Scenario = "terrain-calibration";
+        Assert.Throws<ArgumentException>(plan.Validate);
+        plan.Environment["ROADS_TEST_TERRAIN_CALIBRATION"] = "1"; plan.Validate();
+        plan.Append = "road_path 1,2 3,4";
+        Assert.Throws<ArgumentException>(plan.Validate);
+    }
     [Fact] public void ValidPlanUsesStrictPinsAndTokenizedArguments()
     {
         var plan = Valid(); plan.Validate(); Assert.StartsWith("cli_expect --strict ", plan.ExpectCommand);
