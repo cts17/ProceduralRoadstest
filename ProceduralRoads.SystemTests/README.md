@@ -8,8 +8,8 @@ Optional development tooling, outside the normal Roads release; the production m
 
 | Project | Target | What it holds | Package |
 |---|---|---|---|
-| `ProceduralRoads.Tests` | net48 and net10.0 | The existing xUnit suite, Roads-only doubles (`Shims`: `ModShims`, `PluginShims`, `RoadsHeightmap`) and mod assertions | `Valheim.Testing` 0.1.0-preview.7, `Valheim.Testing.Doubles` 0.1.0-preview.5 (source package) |
-| `ProceduralRoads.SystemTests` | net10.0 (`RollForward` Major) | The Roads plan, scenarios and oracles on the toolkit's pinned server runner | `Valheim.Testing.Game` 0.1.0-preview.13, which pins `Valheim.Testing.Cli` 0.1.0-preview.5 |
+| `ProceduralRoads.Tests` | net48 and net10.0 | The existing xUnit suite, Roads-only doubles (`Shims`: `ModShims`, `PluginShims`, `RoadsHeightmap`) and mod assertions | `Valheim.Testing` 0.1.0-preview.7, `Valheim.Testing.Doubles` 0.1.0-preview.6 (source package) |
+| `ProceduralRoads.SystemTests` | net10.0 (`RollForward` Major) | The Roads plan, scenarios and oracles on the toolkit's pinned server runner | `Valheim.Testing.Game` 0.1.0-preview.14, which pins `Valheim.Testing.Cli` 0.1.0-preview.5 |
 | `ProceduralRoads.SystemTests.Tests` | net10.0 | Plan rules, scenario flows against scripted transports, and the terrain and paint oracles with their negative cases | through the runner project |
 | `ProceduralRoads.TestAdapter` | net48 | The game-side adapter plugin: the Roads commands below | `Valheim.Testing.Adapter` 0.1.0-preview.2 (source package) |
 

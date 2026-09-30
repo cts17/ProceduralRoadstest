@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup><ToolkitPackageVersion Condition="'$(ToolkitPackageVersion)' == ''">0.1.0-preview.7</ToolkitPackageVersion><DoublesPackageVersion Condition="'$(DoublesPackageVersion)' == ''">0.1.0-preview.5</DoublesPackageVersion></PropertyGroup>
+  <PropertyGroup><ToolkitPackageVersion Condition="'$(ToolkitPackageVersion)' == ''">0.1.0-preview.7</ToolkitPackageVersion><DoublesPackageVersion Condition="'$(DoublesPackageVersion)' == ''">0.1.0-preview.6</DoublesPackageVersion></PropertyGroup>
 
     <PropertyGroup>
         <!--
